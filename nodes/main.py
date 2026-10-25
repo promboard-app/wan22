@@ -3,19 +3,21 @@
 노드 하나(wan22)가 프롬프트(필수)와 시작 프레임(선택)을 받아 mp4(H.264, 소리 없음) 한 편을 낸다.
 시작 프레임을 이으면 이미지→영상, 안 이으면 글→영상이다(5B 는 한 모델이 둘 다 한다).
 
-모델(설정 model, manifest requires.models 의 when 으로 고른 것만 받는다)
+모델(설정 model, manifest requires.models 의 when 으로 고른 것만 받는다). 처음 값 '자동'은 앱이 이 PC 그래픽카드로 풀어
+5b-full(24GB 이상) 또는 5b-gguf 를 넘긴다 — 노드 코드는 '자동'을 받지 않는다.
   5b-gguf   Wan2.2-TI2V-5B 변환기를 GGUF Q8_0(QuantStack, 5.4GB)으로. 글 인코더(UMT5-XXL) · VAE 는 공식 Diffusers 저장소.
             12GB 그래픽카드용 기본값.
   5b-full   공식 Wan2.2-TI2V-5B-Diffusers 변환기(fp32 20GB 를 bf16 으로 읽는다). 그래픽카드가 20GB 보다 작으면 무게를
             fp8 로 들고 있다가 계산할 때만 bf16 으로 푼다(diffusers layerwise casting).
-  t2v-a14b  Wan2.2-T2V-A14B(전문가 둘, 단계마다 14B) GGUF Q8_0. 글→영상만.   (미검증)
-  i2v-a14b  Wan2.2-I2V-A14B GGUF Q8_0. 이미지→영상만.                        (미검증)
+  t2v-a14b  Wan2.2-T2V-A14B(전문가 둘, 단계마다 14B) GGUF Q8_0. 글→영상만.   (검증 안 됨)
+  i2v-a14b  Wan2.2-I2V-A14B GGUF Q8_0. 이미지→영상만.                        (검증 안 됨)
 
 12GB 에서 돌리는 길(5B)
-  - 글 인코더(11.4GB bf16)는 그래픽카드에 통째로 못 올려 블록 묶음 단위로 올렸다 내리며 계산한다(diffusers group offloading).
+  - 글 인코더(11.4GB bf16)는 그래픽카드에 통째로 못 올려 층(leaf) 단위로 올렸다 내리며 계산한다(diffusers group offloading).
     프롬프트를 임베딩으로 바꾼 뒤에는 파이프라인에 넣지 않는다(파이프라인은 prompt_embeds 를 받는다).
   - 변환기는 파이프라인 단위 내리기(enable_model_cpu_offload) — 쓸 때만 그래픽카드에 올린다.
-  - VAE 는 그래픽카드에 계속 두고(16GB 보다 작으면 bf16) 타일로 나눠 푼다(enable_tiling, 24GB 이상이면 나누지 않는다).
+  - VAE(16GB 보다 작으면 bf16)는 내리기 고리에서 빼고 노드가 옮긴다 — 시작 그림 줄이기 · 풀기 때만 그래픽카드, 생성 중에는 RAM.
+    마지막 단계 뒤에는 변환기를 내리고 푼다. 타일로 나눠 푼다(enable_tiling, 24GB 이상이면 나누지 않는다).
 공식 값(Wan2.2 README · diffusers 예시): 5B 720P = 1280×704 · 704×1280, 24fps, 121프레임(5초), 50단계, guidance 5.0.
 A14B: 720P 1280×720 · 480P 832×480, 16fps, 81프레임(5초), 40단계, guidance T2V 4.0/3.0 · I2V 3.5/3.5(전문가 high/low).
 이미지가 있으면 화면 비는 이미지를 따르고 넓이(가로×세로)는 고른 해상도와 같게 맞춘다(diffusers Wan I2V 예시와 같은 식).
@@ -58,7 +60,7 @@ MAX_SEQUENCE_LENGTH = 512  # Wan 글 인코더 길이(diffusers WanPipeline 기�
 FULL_GPU_MB = 20_000  # 이보다 작은 그래픽카드면 원본 5B 를 fp8 로 들고 있는다
 NO_TILING_MB = 24_000  # 이 이상이면 VAE 를 타일 없이 푼다
 VAE_FP32_MB = 16_000  # 이 이상이면 VAE 를 공식 예시대로 fp32 로, 아래면 bf16 으로 그래픽카드에 둔다
-TE_ON_GPU_MB = 16_000  # 이 이상이면 글 인코더를 통째로 올린다(아니면 블록 묶음 단위)
+TE_ON_GPU_MB = 16_000  # 이 이상이면 글 인코더를 통째로 올린다(아니면 층 단위)
 # PromBoard 실행기는 노드 한 번에 900초 + 처음 모델 적재 몫 180초를 준다(server/src/plugins/runner/run.ts
 # PLUGIN_NODE_BUDGET_SEC · localai/timeouts.ts). 앞 단계 속도로 전체 시간을 어림해 넘을 것 같으면 바로 멈추고 알린다.
 TIME_BUDGET_SEC = 1050
@@ -111,7 +113,7 @@ def _drop_pipe():
 def _oom_message(variant):
     tip = "해상도를 480P 로 낮추거나 길이를 줄여 주세요."
     if variant == "5b-full":
-        tip = "모델을 '5B · 가벼운 판'으로 바꾸거나 " + tip
+        tip = "모델을 '5B GGUF Q8'로 바꾸거나 " + tip
     return f"그래픽카드 메모리가 모자라 멈췄습니다. {tip} 다른 프로그램(게임 · 다른 AI)이 그래픽카드를 쓰고 있으면 닫아 주세요."
 
 
@@ -139,13 +141,9 @@ def _text_encoder(ctx, progress):
         else:
             from diffusers.hooks import apply_group_offloading
 
-            apply_group_offloading(
-                te,
-                onload_device=torch.device("cuda"),
-                offload_device=torch.device("cpu"),
-                offload_type="block_level",
-                num_blocks_per_group=4,
-            )
+            # 층(leaf) 단위로 올렸다 내린다. 블록 단위(block_level)는 바로 아래 자식의 ModuleList 만 묶는데 UMT5 는 층이
+            # encoder.block 으로 한 단계 깊어 글 인코더 전체가 한 묶음으로 올라간다.
+            apply_group_offloading(te, onload_device=torch.device("cuda"), offload_device=torch.device("cpu"), offload_type="leaf_level")
     _CACHE["tok"], _CACHE["te"] = tok, te
     ctx.log(f"text encoder loaded in {time.monotonic() - start:.1f}s")
     return tok, te
@@ -230,7 +228,7 @@ def _parts(ctx, progress, variant):
         boundary = 0.875 if family == "t2v" else 0.9  # 공식 model_index.json boundary_ratio
         expand = False
     ctx.check_cancel()
-    # VAE 는 _pipeline 이 그래픽카드에 계속 올려 둔다. 공식 예시는 fp32 — 16GB 보다 작은 그래픽카드는 bf16(절반 크기)으로 둔다.
+    # VAE 는 _pipeline · 노드가 옮긴다(맨 위 설명). 공식 예시는 fp32 — 16GB 보다 작은 그래픽카드는 bf16(절반 크기)으로 둔다.
     vae_dtype = torch.float32 if vram >= VAE_FP32_MB else torch.bfloat16
     vae = AutoencoderKLWan.from_pretrained(os.path.join(root, "vae"), torch_dtype=vae_dtype)
     if vram < NO_TILING_MB:
@@ -251,9 +249,9 @@ def _parts(ctx, progress, variant):
 def _pipeline(ctx, progress, variant, i2v=False):
     """글→영상 또는 이미지→영상 파이프라인 하나(부품은 같이 쓴다). 글 인코더는 넣지 않는다(prompt_embeds 로 받는다).
 
-    변환기는 파이프라인 단위 내리기(enable_model_cpu_offload)로 쓸 때만 올린다. VAE 는 그 고리에서 빼고 그래픽카드에 계속 둔다 —
-    고리에 두면 VAE 가 생성 내내 RAM 에서 놀다가 마지막에 올라가는데, 메모리가 빠듯한 PC 에서는 그사이 윈도가 그 RAM 을
-    페이지 파일로 내보내 풀기 직전에 몇 분씩 멈췄다(실측). 실행기는 쉬는 시간이 길면 사이드카를 끄므로 그래픽카드를 오래 잡지 않는다."""
+    변환기는 파이프라인 단위 내리기(enable_model_cpu_offload)로 쓸 때만 올린다. VAE 는 그 고리에서 빼 그래픽카드에 올려 두고,
+    노드가 생성 동안만 RAM 으로 내렸다가 풀기 전에 다시 올린다(wan22 on_step). 고리에 두면 디스크에서 매핑된 채 읽힌 VAE 를 풀기
+    직전에야 처음 읽어, 느린 디스크에서는 거기서 몇 분씩 멈췄다(실측)."""
     from diffusers import WanImageToVideoPipeline, WanPipeline
 
     parts = _parts(ctx, progress, variant)
@@ -374,6 +372,7 @@ def wan22(ctx, inputs, settings):
         load = Progress(ctx, 0.0, 0.08)
         embeds = _encode(ctx, load, [prompt, negative])
         pipe = _pipeline(ctx, load, variant, i2v=image is not None)
+        pipe.vae.to("cuda")  # 앞 실행이 생성 중에 멈췄으면 VAE 가 RAM 에 남아 있다
         if image is not None:
             image = image.resize((width, height), Image.LANCZOS)
         ctx.check_cancel()
@@ -388,6 +387,18 @@ def wan22(ctx, inputs, settings):
                 loop_start[0] = now
             done = i + 1
             denoise(done / steps, "denoise")
+            if done == 1:
+                # 생성 동안에는 VAE 를 RAM 에 둔다(12GB 에서 다른 프로그램 몫까지 남기려고 — 넘치면 윈도가 공유 메모리로 넘겨 몇 배 느려진다).
+                # 이미지→영상의 시작 그림 줄이기는 첫 단계 전에 끝났다.
+                p.vae.to("cpu")
+                torch.cuda.empty_cache()
+            if done == steps:
+                # 마지막 단계 뒤에는 변환기를 쓰지 않는다 — 내리고 VAE 를 올려 그래픽카드에서 푼다.
+                for name in ("transformer", "transformer_2"):
+                    if getattr(p, name, None) is not None:
+                        getattr(p, name).to("cpu")
+                torch.cuda.empty_cache()
+                p.vae.to("cuda")
             if done >= 2:
                 per = (now - loop_start[0]) / max(1, done - 1)
                 total = (now - t0) + per * (steps - done) * (1 + DECODE_SHARE)
@@ -424,14 +435,23 @@ def wan22(ctx, inputs, settings):
         _write_mp4(out, frames, VARIANTS[variant]["fps"])
         ctx.log(f"done in {time.monotonic() - t0:.1f}s, peak torch VRAM {peak:.2f} GiB")
     except torch.OutOfMemoryError:
-        _drop_pipe()
-        raise RuntimeError(_oom_message(variant)) from None
+        oom = True
     except BaseException:
         if pipe is not None:
             _offload(pipe)
         raise
+    else:
+        oom = False
     finally:
         _free_cuda()
+    if oom:
+        # except 블록 밖에서 정리하고 새 오류를 낸다 — 블록 안에서 내면 원래 오류(와 그 프레임이 쥔 그래픽카드 텐서)가
+        # 새 오류의 __context__ 로 남아 사이드카가 다음 실행까지 그래픽카드 메모리를 놓지 못한다.
+        if pipe is not None:
+            _offload(pipe)
+        pipe = None
+        _drop_pipe()
+        raise RuntimeError(_oom_message(variant))
     ctx.progress(1.0, "done")
     return {"video": out}
 

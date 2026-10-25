@@ -6,7 +6,7 @@ PromBoard 커뮤니티 플러그인입니다. 캔버스에 **Wan 2.2 영상** �
 |---|---|
 | ![글→영상: 해 뜨는 눈 덮인 소나무 숲을 걷는 붉은 여우](docs/t2v-720p-3s.gif) | ![시작 프레임](docs/i2v-start.jpg) ![이미지→영상: 여우가 눈보라를 일으키며 뛴다](docs/i2v-720p-2s.gif) |
 
-프롬프트(글→영상): `A red fox trots through fresh snow in a quiet pine forest at sunrise, soft golden light, the camera slowly tracks alongside.` — 5B 가벼운 판, 시드 42. GIF 는 480px · 12fps 로 줄인 것이고 실제 결과는 1280×704 · 24fps mp4 입니다.
+프롬프트(글→영상): `A red fox trots through fresh snow in a quiet pine forest at sunrise, soft golden light, the camera slowly tracks alongside.` — 5B GGUF Q8, 시드 42. GIF 는 480px · 12fps 로 줄인 것이고 실제 결과는 1280×704 · 24fps mp4 입니다.
 
 ## 입력과 결과
 
@@ -20,13 +20,14 @@ PromBoard 커뮤니티 플러그인입니다. 캔버스에 **Wan 2.2 영상** �
 
 | 판 | 하는 일 | 받는 것 | 크기 |
 |---|---|---|---|
-| **5B 가벼운 판**(기본) | 글→영상 · 이미지→영상 | 변환기 [QuantStack/Wan2.2-TI2V-5B-GGUF](https://huggingface.co/QuantStack/Wan2.2-TI2V-5B-GGUF) Q8_0 + 글 인코더 UMT5-XXL · VAE [Wan-AI/Wan2.2-TI2V-5B-Diffusers](https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B-Diffusers) | 약 19.6GB |
-| 5B 원본 | 글→영상 · 이미지→영상 | 공식 [Wan-AI/Wan2.2-TI2V-5B-Diffusers](https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B-Diffusers) 전부(변환기 fp32 20GB 를 bf16 으로 읽고, 그래픽카드가 20GB 보다 작으면 fp8 로 들고 있다가 계산할 때만 푼다) | 약 34.2GB |
-| 14B 글→영상 (미검증) | 글→영상 | [QuantStack/Wan2.2-T2V-A14B-GGUF](https://huggingface.co/QuantStack/Wan2.2-T2V-A14B-GGUF) 전문가 둘 Q8_0 + 설정 · VAE [Wan-AI/Wan2.2-T2V-A14B-Diffusers](https://huggingface.co/Wan-AI/Wan2.2-T2V-A14B-Diffusers) + 같은 글 인코더 | 약 42.7GB |
-| 14B 이미지→영상 (미검증) | 이미지→영상 | [QuantStack/Wan2.2-I2V-A14B-GGUF](https://huggingface.co/QuantStack/Wan2.2-I2V-A14B-GGUF) 전문가 둘 Q8_0 + [Wan-AI/Wan2.2-I2V-A14B-Diffusers](https://huggingface.co/Wan-AI/Wan2.2-I2V-A14B-Diffusers) + 같은 글 인코더 | 약 42.7GB |
+| 5B GGUF Q8 | 글→영상 · 이미지→영상 | 변환기 [QuantStack/Wan2.2-TI2V-5B-GGUF](https://huggingface.co/QuantStack/Wan2.2-TI2V-5B-GGUF) Q8_0 + 글 인코더 UMT5-XXL · VAE [Wan-AI/Wan2.2-TI2V-5B-Diffusers](https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B-Diffusers) | 약 19.6GB |
+| 5B 원본 (bf16) | 글→영상 · 이미지→영상 | 공식 [Wan-AI/Wan2.2-TI2V-5B-Diffusers](https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B-Diffusers) 전부(변환기 fp32 20GB 를 bf16 으로 읽고, 그래픽카드가 20GB 보다 작으면 fp8 로 들고 있다가 계산할 때만 푼다) | 약 34.2GB |
+| 14B 글→영상 (검증 안 됨) | 글→영상 | [QuantStack/Wan2.2-T2V-A14B-GGUF](https://huggingface.co/QuantStack/Wan2.2-T2V-A14B-GGUF) 전문가 둘 Q8_0 + 설정 · VAE [Wan-AI/Wan2.2-T2V-A14B-Diffusers](https://huggingface.co/Wan-AI/Wan2.2-T2V-A14B-Diffusers) + 같은 글 인코더 | 약 42.7GB |
+| 14B 이미지→영상 (검증 안 됨) | 이미지→영상 | [QuantStack/Wan2.2-I2V-A14B-GGUF](https://huggingface.co/QuantStack/Wan2.2-I2V-A14B-GGUF) 전문가 둘 Q8_0 + [Wan-AI/Wan2.2-I2V-A14B-Diffusers](https://huggingface.co/Wan-AI/Wan2.2-I2V-A14B-Diffusers) + 같은 글 인코더 | 약 42.7GB |
 
+- 처음 값 **자동**은 이 PC 그래픽카드 메모리가 24GB 이상이면 5B 원본, 그 밖(그래픽카드를 모르는 PC 포함)은 5B GGUF Q8 을 고르고 그 판만 받습니다. 기준은 5B 원본 24GB(공식 RTX 4090 안내) · GGUF Q8 12GB(아래 실측)입니다.
 - 글 인코더 · 토크나이저는 네 판이 같은 파일(5B 저장소 것)을 같이 씁니다.
-- 14B 두 판은 그래픽카드 24GB 이상 · RAM 64GB 를 권장하고, 아직 실제로 돌려 보지 않았습니다.
+- 14B 두 판은 아직 실제로 돌려 보지 않았습니다(공식 안내는 그래픽카드 80GB 이상, 이 플러그인은 GGUF Q8 과 내리기로 줄여 씁니다).
 
 ## 설정
 
@@ -36,20 +37,20 @@ PromBoard 커뮤니티 플러그인입니다. 캔버스에 **Wan 2.2 영상** �
 - 시드, 피할 것(비우면 Wan 공식 기본 부정 프롬프트).
 - 공식 값(Wan2.2 README · diffusers 예시): 5B 24fps, guidance 5.0, UniPC 스케줄러. 14B 16fps, guidance 글→영상 4.0/3.0 · 이미지→영상 3.5/3.5.
 
-## 실측 (RTX 4070 SUPER 12GB · RAM 64GB · Windows, 5B 가벼운 판)
+## 실측 (RTX 4070 SUPER 12GB · RAM 64GB · Windows, 5B GGUF Q8)
 
 | 설정 | 걸린 시간 | 그래픽카드 메모리 최대 |
 |---|---|---|
 | 720P · 2초 · 20단계, 글→영상 | 3분 18초 | 8.7GiB (torch) |
 | 720P · 2초 · 20단계, 이미지→영상 | 3분 44초 | 8.7GiB |
-| **720P · 3초 · 30단계 (기본 설정)** | 8분 57초 | 9.7GiB |
+| **720P · 3초 · 30단계 (기본 설정)** | 7분 12초 | 9.6GiB |
 | 720P · 3초 · 20단계 | 5분 3초 | 9.7GiB |
 | 720P · 3초 · 50단계 (공식 단계) | 14분 54초 | 9.7GiB |
 | 480P · 5초 · 20단계 | 3분 31초 | 8.8GiB |
 | 720P · 5초 · 20단계 | 그래픽카드 메모리를 넘어(torch 11.7GiB) 느려져, 노드가 6번째 단계에서 어림 18분으로 멈춤 | — |
 
-- 시간은 모델을 이미 읽어 둔 상태에서 잰 노드 한 번(프롬프트 임베딩 · 생성 · 풀기 · mp4 쓰기)입니다. 처음 실행은 모델 읽기(글 인코더 11.4GB · 변환기 5.4GB)가 더해집니다.
-- 그래픽카드 메모리는 `torch.cuda.max_memory_allocated` 입니다. nvidia-smi 로 본 전체 사용량은 11.8GB 까지 올라갔습니다(같은 PC 의 다른 프로그램 몫 포함).
+- 시간은 모델을 이미 읽어 둔 상태에서 잰 노드 한 번(프롬프트 임베딩 · 생성 · 풀기 · mp4 쓰기)입니다. 기본 설정 줄은 1.0.1 코드(생성 중 VAE 를 RAM 으로)로 다시 잰 값이고, 나머지 줄은 1.0.0 코드로 잰 값입니다. 처음 실행은 모델 읽기(글 인코더 11.4GB · 변환기 5.4GB)가 더해집니다.
+- 그래픽카드 메모리는 `torch.cuda.max_memory_allocated` 입니다. nvidia-smi 로 본 전체 사용량은 11.9GB 까지 올라갔습니다(같은 PC 의 다른 프로그램 몫 약 1.3GB 포함).
 - 단계 하나는 720P 2초 약 7초, 720P 3초 약 12~16초입니다.
 - 5B 원본 판과 14B 두 판은 이 PC 에서 돌려 보지 않았습니다.
 
@@ -72,7 +73,7 @@ nodes/main.py            NODES = {"wan22": 함수} — 글 인코더로 임베�
 nodes/requirements*.txt  받을 패키지 · 운영체제별 해시 잠금 파일(Windows · Linux)
 ```
 
-- 12GB 에서 돌리는 길: 글 인코더(bf16 11.4GB)는 블록 묶음 단위로 올렸다 내리며 임베딩을 만들고 파이프라인에는 넣지 않습니다. 변환기는 파이프라인 단위 내리기(enable_model_cpu_offload)로 쓸 때만 올리고, VAE 는 그래픽카드에 계속 둡니다(16GB 보다 작으면 bf16). VAE 를 내리기 고리에 두면 생성 내내 RAM 에서 놀다가 마지막에 올라가는데, 메모리가 빠듯한 PC 에서는 그사이 윈도가 그 RAM 을 페이지 파일로 내보내 풀기 직전에 몇 분씩 멈췄습니다.
+- 12GB 에서 돌리는 길: 글 인코더(bf16 11.4GB)는 층(leaf) 단위로 올렸다 내리며 임베딩을 만들고 파이프라인에는 넣지 않습니다. 변환기는 파이프라인 단위 내리기(enable_model_cpu_offload)로 쓸 때만 올리고, VAE(16GB 보다 작으면 bf16)는 시작 그림 줄이기 · 풀기 때만 그래픽카드에 두고 생성 중에는 RAM 으로 내립니다. 마지막 단계 뒤에는 변환기를 내리고 풉니다. 다른 프로그램이 그래픽카드를 쓰고 있으면 12GB 를 넘겨 윈도가 공유 메모리로 넘기는데, 그러면 몇 배 느려집니다.
 - 앞 단계 속도로 전체 시간을 어림해 PromBoard 의 한 번 실행 시간(약 15분)을 넘을 것 같으면 바로 멈추고 줄일 설정을 알립니다.
 - 잠금 파일 다시 만들기: `uv pip compile nodes/requirements.in --generate-hashes --python-version 3.12 --python-platform x86_64-pc-windows-msvc --index-url https://pypi.org/simple --exclude-newer 2026-10-25T00:00:00Z` (리눅스는 `x86_64-manylinux_2_28`). torch 줄은 앱이 빼고 앱의 torch 2.8.0 을 먼저 깝니다(`"torch": "host"`).
 
@@ -83,11 +84,11 @@ nodes/requirements*.txt  받을 패키지 · 운영체제별 해시 잠금 파�
 A PromBoard community plugin. It adds one **Wan 2.2 video** node that runs Alibaba's open Wan 2.2 on your PC: text-to-video from a prompt, or image-to-video from a start frame (no audio).
 
 - Inputs: prompt (required), start frame (optional; the aspect ratio follows the image). Output: an H.264 MP4 without audio (5B 24 fps, 14B 16 fps).
-- Variants (only the chosen one is downloaded): **5B light** (default; QuantStack Wan2.2-TI2V-5B GGUF Q8_0 transformer + the official UMT5-XXL text encoder and VAE, about 19.6 GB), 5B original (the official Diffusers repo, about 34.2 GB; the fp32 transformer is loaded as bf16 and kept in fp8 below 20 GB of VRAM), 14B text-to-video and 14B image-to-video (two GGUF Q8_0 experts each, about 42.7 GB; 24 GB+ VRAM and 64 GB RAM recommended, **unverified**).
+- Variants (only the chosen one is downloaded; the default **Auto** picks 5B original on 24 GB+ GPUs and 5B GGUF Q8 otherwise): 5B GGUF Q8 (QuantStack Wan2.2-TI2V-5B GGUF Q8_0 transformer + the official UMT5-XXL text encoder and VAE, about 19.6 GB), 5B original (the official Diffusers repo, about 34.2 GB; the fp32 transformer is loaded as bf16 and kept in fp8 below 20 GB of VRAM), 14B text-to-video and 14B image-to-video (two GGUF Q8_0 experts each, about 42.7 GB; officially 80 GB+ VRAM, reduced here with GGUF Q8 and offloading, **unverified**).
 - Settings: resolution (720P / 480P — the 5B model was trained at 720P), orientation, length, steps (official: 5 s, 50 steps; 40 for 14B — the plugin defaults to **3 s · 30 steps**, which fits a 12 GB card within one run), seed, negative prompt (empty = the official Wan default).
-- 12 GB path: the text encoder is block-offloaded and used only to make embeddings; the transformer uses model CPU offload; the VAE stays on the GPU (bf16 below 16 GB). Keeping the VAE in the offload chain left it idle in RAM during sampling, and on a memory-tight PC Windows paged it out, stalling for minutes right before decoding. The node estimates the total time from the first steps and stops early when it would exceed PromBoard's single-run limit (about 15 minutes).
+- 12 GB path: the text encoder is offloaded layer by layer (leaf level) and used only to make embeddings; the transformer uses model CPU offload; the VAE (bf16 below 16 GB) is on the GPU only for encoding the start frame and decoding, and in RAM during sampling; the transformer is offloaded before decoding. If other programs use the GPU and the total goes over 12 GB, Windows spills into shared memory and generation gets several times slower. The node estimates the total time from the first steps and stops early when it would exceed PromBoard's single-run limit (about 15 minutes).
 
-- Measured on an RTX 4070 SUPER 12 GB (64 GB RAM, Windows), 5B light, models already loaded: 720P 2 s 20 steps 3 min 18 s (text) / 3 min 44 s (image), **720P 3 s 30 steps (the default) 8 min 57 s**, 720P 3 s 20 steps 5 min 3 s, 720P 3 s 50 steps (official) 14 min 54 s, 480P 5 s 20 steps 3 min 31 s; peak `torch.cuda.max_memory_allocated` 8.7–9.7 GiB. 720P 5 s exceeds 12 GB (11.7 GiB) and slows down, so the node stops itself at step 6 with an 18-minute estimate. The 5B original and both 14B variants were not run here.
+- Measured on an RTX 4070 SUPER 12 GB (64 GB RAM, Windows), 5B GGUF Q8, models already loaded: 720P 2 s 20 steps 3 min 18 s (text) / 3 min 44 s (image), **720P 3 s 30 steps (the default) 7 min 12 s** (re-measured with 1.0.1, the other rows with 1.0.0), 720P 3 s 20 steps 5 min 3 s, 720P 3 s 50 steps (official) 14 min 54 s, 480P 5 s 20 steps 3 min 31 s; peak `torch.cuda.max_memory_allocated` 8.7–9.7 GiB. 720P 5 s exceeds 12 GB (11.7 GiB) and slows down, so the node stops itself at step 6 with an 18-minute estimate. The 5B original and both 14B variants were not run here.
 
 - License: plugin code Apache-2.0; Wan 2.2 weights (and the GGUF conversions) Apache-2.0, no revenue cap, regional restriction or access gate.
 - **Install**: PromBoard → Plugin Manager → **Community plugins** → Browse → install. Turn off **Restricted mode** and enable the plugin. The first run prepares the Python packages and the chosen variant's models.

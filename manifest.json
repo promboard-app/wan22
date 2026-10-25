@@ -1,12 +1,15 @@
 {
   "schema": 1,
   "id": "promboard.wan22",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "name": "Wan 2.2 — 글 · 이미지로 영상 만들기",
-  "description": "알리바바 Wan 2.2 공개 모델로 프롬프트(글)에서, 또는 시작 프레임 그림에서 이어지는 영상을 이 PC 에서 만든다(소리 없음, mp4). 기본은 5B 모델의 가벼운 판(GGUF Q8, 받기 약 20GB)이라 12GB 그래픽카드에서 돈다(RTX 4070 SUPER 12GB 실측: 기본 설정 720P · 3초 · 30단계 약 9분). 원본 5B(받기 약 34GB)와 14B 글→영상 · 이미지→영상(각 받기 약 43GB, 24GB 이상 권장 · 미검증)도 고를 수 있고, 고른 판의 파일만 받는다. 라이선스 Apache-2.0(상업 사용 가능). NVIDIA 그래픽카드 전용.",
+  "description": "알리바바 Wan 2.2 공개 모델로 프롬프트(글)에서, 또는 시작 프레임 그림에서 이어지는 영상을 이 PC 에서 만든다(소리 없음, mp4). 모델 '자동'은 그래픽카드에 맞는 5B 판을 고른다 — 24GB 이상은 원본(받기 약 34GB), 그 밖은 GGUF Q8(받기 약 20GB, RTX 4070 SUPER 12GB 실측: 기본 설정 720P · 3초 · 30단계 약 7분). 14B 글→영상 · 이미지→영상(각 받기 약 43GB, 검증 안 됨)도 고를 수 있고, 고른 판의 파일만 받는다. 라이선스 Apache-2.0(상업 사용 가능). NVIDIA 그래픽카드 전용.",
   "author": "PromBoard",
   "license": "Apache-2.0",
-  "app": ">=1.0.1",
+  "app": ">=1.0.3",
+  "categories": [
+    "videoGenerate"
+  ],
   "repository": "https://github.com/promboard-app/wan22",
   "icon": "icon.png",
   "contents": [
@@ -47,16 +50,31 @@
         {
           "id": "model",
           "label": "모델",
-          "help": "5B 가벼운 판: 12GB 그래픽카드용(GGUF Q8, 받기 약 20GB). 5B 원본: 받기 약 34GB, 그래픽카드가 20GB 보다 작으면 fp8 로 줄여 올린다. 14B 두 판은 24GB 이상 · RAM 64GB 권장이고 아직 실제로 돌려 보지 않았다(미검증). 고른 판의 파일만 받는다.",
+          "help": "자동: 그래픽카드 메모리 24GB 이상이면 5B 원본, 아니면 5B GGUF Q8 — 실행 준비는 고른 판의 파일만 받는다. 5B GGUF Q8: 12GB 그래픽카드용(받기 약 20GB). 5B 원본: 받기 약 34GB, 공식 기준 24GB(그보다 작으면 fp8 로 줄여 올린다). 14B 두 판은 아직 실제로 돌려 보지 않았다(검증 안 됨).",
           "type": "select",
           "options": [
             {
+              "value": "auto",
+              "label": "자동",
+              "auto": [
+                {
+                  "minVramMb": 24576,
+                  "value": "5b-full"
+                },
+                {
+                  "value": "5b-gguf"
+                }
+              ]
+            },
+            {
               "value": "5b-gguf",
-              "label": "5B 가벼운 판"
+              "label": "5B GGUF Q8",
+              "vramMinMb": 12288
             },
             {
               "value": "5b-full",
-              "label": "5B 원본"
+              "label": "5B 원본 (bf16)",
+              "vramMinMb": 24576
             },
             {
               "value": "t2v-a14b",
@@ -67,7 +85,7 @@
               "label": "14B 이미지→영상"
             }
           ],
-          "default": "5b-gguf"
+          "default": "auto"
         },
         {
           "id": "resolution",
@@ -127,7 +145,7 @@
         {
           "id": "steps",
           "label": "단계",
-          "help": "모델 기본은 공식 값(5B 50단계 · 14B 40단계). 12GB 실측 720P 3초: 20단계 약 5분 · 30단계 약 9분 · 50단계 약 15분(처음 실행은 모델 읽기까지 더해 한 번 실행 시간을 넘을 수 있다). 단계를 줄이면 빨라지고 디테일이 줄어든다.",
+          "help": "모델 기본은 공식 값(5B 50단계 · 14B 40단계). 12GB 실측 720P 3초: 20단계 약 5분 · 30단계 약 7분 · 50단계 약 15분(처음 실행은 모델 읽기까지 더해 한 번 실행 시간을 넘을 수 있다). 단계를 줄이면 빨라지고 디테일이 줄어든다.",
           "type": "select",
           "options": [
             {
