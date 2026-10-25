@@ -27,7 +27,7 @@ PromBoard 커뮤니티 플러그인입니다. 캔버스에 **Wan 2.2 영상** �
 
 - 처음 값 **자동**은 이 PC 그래픽카드 메모리가 24GB 이상이면 5B 원본, 그 밖(그래픽카드를 모르는 PC 포함)은 5B GGUF Q8 을 고르고 그 판만 받습니다. 기준은 5B 원본 24GB(공식 RTX 4090 안내) · GGUF Q8 12GB(아래 실측)입니다.
 - 글 인코더 · 토크나이저는 네 판이 같은 파일(5B 저장소 것)을 같이 씁니다.
-- 14B 두 판은 아직 실제로 돌려 보지 않았습니다(공식 안내는 그래픽카드 80GB 이상, 이 플러그인은 GGUF Q8 과 내리기로 줄여 씁니다).
+- 14B 두 판은 아직 실제로 돌려 보지 않았습니다(공식 안내는 그래픽카드 80GB 이상, 이 플러그인은 GGUF Q8 과 내리기로 줄여 씁니다). 필요 그래픽카드 메모리는 24GB 로 적었습니다(어림값 — 쓸 차례의 Q8 전문가 하나 15.4GB 를 통째로 올리고, 아래 5B 실측의 계산 몫보다 큰 720P 계산 몫을 더한 값).
 
 ## 설정
 
@@ -84,7 +84,7 @@ nodes/requirements*.txt  받을 패키지 · 운영체제별 해시 잠금 파�
 A PromBoard community plugin. It adds one **Wan 2.2 video** node that runs Alibaba's open Wan 2.2 on your PC: text-to-video from a prompt, or image-to-video from a start frame (no audio).
 
 - Inputs: prompt (required), start frame (optional; the aspect ratio follows the image). Output: an H.264 MP4 without audio (5B 24 fps, 14B 16 fps).
-- Variants (only the chosen one is downloaded; the default **Auto** picks 5B original on 24 GB+ GPUs and 5B GGUF Q8 otherwise): 5B GGUF Q8 (QuantStack Wan2.2-TI2V-5B GGUF Q8_0 transformer + the official UMT5-XXL text encoder and VAE, about 19.6 GB), 5B original (the official Diffusers repo, about 34.2 GB; the fp32 transformer is loaded as bf16 and kept in fp8 below 20 GB of VRAM), 14B text-to-video and 14B image-to-video (two GGUF Q8_0 experts each, about 42.7 GB; officially 80 GB+ VRAM, reduced here with GGUF Q8 and offloading, **unverified**).
+- Variants (only the chosen one is downloaded; the default **Auto** picks 5B original on 24 GB+ GPUs and 5B GGUF Q8 otherwise): 5B GGUF Q8 (QuantStack Wan2.2-TI2V-5B GGUF Q8_0 transformer + the official UMT5-XXL text encoder and VAE, about 19.6 GB), 5B original (the official Diffusers repo, about 34.2 GB; the fp32 transformer is loaded as bf16 and kept in fp8 below 20 GB of VRAM), 14B text-to-video and 14B image-to-video (two GGUF Q8_0 experts each, about 42.7 GB; officially 80 GB+ VRAM, reduced here with GGUF Q8 and offloading to an estimated 24 GB — the active 15.4 GB Q8 expert is moved on whole, plus a 720P compute share larger than the 5B measurement below; **unverified**).
 - Settings: resolution (720P / 480P — the 5B model was trained at 720P), orientation, length, steps (official: 5 s, 50 steps; 40 for 14B — the plugin defaults to **3 s · 30 steps**, which fits a 12 GB card within one run), seed, negative prompt (empty = the official Wan default).
 - 12 GB path: the text encoder is offloaded layer by layer (leaf level) and used only to make embeddings; the transformer uses model CPU offload; the VAE (bf16 below 16 GB) is on the GPU only for encoding the start frame and decoding, and in RAM during sampling; the transformer is offloaded before decoding. If other programs use the GPU and the total goes over 12 GB, Windows spills into shared memory and generation gets several times slower. The node estimates the total time from the first steps and stops early when it would exceed PromBoard's single-run limit (about 15 minutes).
 
